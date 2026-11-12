@@ -1,0 +1,387 @@
+/**
+ * 前台游戏档案管理界面样式。
+ *
+ * 仅作用于 .yggdrasil-profiles 容器内的元素，无外部依赖。
+ */
+
+.yggdrasil-profiles {
+    color: #1d2327;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 1.5em 0;
+}
+
+.yggdrasil-profiles *,
+.yggdrasil-profiles *::before,
+.yggdrasil-profiles *::after {
+    box-sizing: border-box;
+}
+
+.yggdrasil-profiles__title {
+    border-bottom: 1px solid #dcdcde;
+    font-size: 1.4em;
+    line-height: 1.3;
+    margin: 0 0 1em;
+    padding-bottom: 0.4em;
+}
+
+.yggdrasil-profiles__summary {
+    color: #646970;
+    font-size: 13px;
+    margin: 0 0 1em;
+}
+
+.yggdrasil-profiles__empty,
+.yggdrasil-profiles__limit {
+    background: #f6f7f7;
+    border: 1px dashed #c3c4c7;
+    border-radius: 4px;
+    margin: 0 0 1.25em;
+    padding: 0.9em 1em;
+}
+
+.yggdrasil-profiles--login {
+    margin: 1em 0;
+}
+
+.yggdrasil-login-link {
+    font-weight: 600;
+}
+
+/* ---------- 通知 ---------- */
+
+.yggdrasil-notice {
+    border-left: 4px solid #2271b1;
+    border-radius: 3px;
+    margin: 0 0 1em;
+    padding: 0.75em 1em;
+}
+
+.yggdrasil-notice--success {
+    background: #edfaef;
+    border-left-color: #00a32a;
+}
+
+.yggdrasil-notice--error {
+    background: #fcf0f1;
+    border-left-color: #d63638;
+}
+
+.yggdrasil-notice--info {
+    background: #f0f6fc;
+    border-left-color: #2271b1;
+}
+
+/* ---------- 档案卡片网格 ---------- */
+
+.yggdrasil-profiles__grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    margin: 1.25rem 0;
+}
+
+.yggdrasil-profile-card {
+    background: #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 1rem;
+}
+
+.yggdrasil-profile-card__header {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.yggdrasil-profile-card__name {
+    font-size: 1.15em;
+    line-height: 1.3;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.yggdrasil-badge {
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 0.4em 0.7em;
+    white-space: nowrap;
+}
+
+.yggdrasil-badge--default {
+    background: #edfaef;
+    border: 1px solid #00a32a;
+    color: #007017;
+}
+
+.yggdrasil-profile-card__body {
+    align-items: flex-start;
+    display: flex;
+    gap: 1rem;
+    margin: 0.75rem 0;
+}
+
+/* ---------- 皮肤预览：96px 像素风 + 棋盘格背景 ---------- */
+
+.yggdrasil-skin-preview {
+    background-color: #e9e9e9;
+    background-image:
+        linear-gradient(45deg, #d0d0d0 25%, transparent 25%),
+        linear-gradient(-45deg, #d0d0d0 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #d0d0d0 75%),
+        linear-gradient(-45deg, transparent 75%, #d0d0d0 75%);
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-size: 16px 16px;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    display: block;
+    flex: 0 0 auto;
+    height: 96px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    object-fit: contain;
+    width: 96px;
+}
+
+.yggdrasil-skin-preview--empty {
+    align-items: center;
+    color: #646970;
+    display: flex;
+    font-size: 12px;
+    justify-content: center;
+    text-align: center;
+}
+
+.yggdrasil-skin-local {
+    margin: 0.5rem 0;
+}
+
+.yggdrasil-skin-local__image {
+    margin: 0;
+    max-width: 96px;
+}
+
+.yggdrasil-skin-error {
+    color: #d63638;
+    font-size: 12px;
+    margin: 0.25rem 0;
+}
+
+.yggdrasil-profile-card__meta {
+    display: grid;
+    gap: 0.15rem 0.5rem;
+    grid-template-columns: auto 1fr;
+    margin: 0;
+    min-width: 0;
+}
+
+.yggdrasil-profile-card__meta dt {
+    color: #646970;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.yggdrasil-profile-card__meta dd {
+    font-size: 13px;
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.yggdrasil-profile-card__meta code {
+    font-size: 12px;
+    word-break: break-all;
+}
+
+/* ---------- 表单 ---------- */
+
+.yggdrasil-profile-card__forms {
+    border-top: 1px solid #f0f0f1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.yggdrasil-form {
+    border-top: 1px solid #f0f0f1;
+    margin: 0;
+    padding: 0.6rem 0 0;
+}
+
+.yggdrasil-form:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.yggdrasil-form--inline {
+    border-top: 0;
+    display: inline-block;
+    padding: 0;
+}
+
+.yggdrasil-form__row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0 0 0.6rem;
+}
+
+.yggdrasil-label {
+    color: #50575e;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.yggdrasil-input,
+.yggdrasil-select,
+.yggdrasil-file {
+    background: #fff;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    color: #1d2327;
+    font-size: 14px;
+    line-height: 1.4;
+    max-width: 100%;
+    padding: 0.4em 0.5em;
+    width: 100%;
+}
+
+.yggdrasil-file {
+    background: #f6f7f7;
+    padding: 0.35em;
+}
+
+.yggdrasil-input:focus,
+.yggdrasil-select:focus,
+.yggdrasil-file:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: 2px solid transparent;
+}
+
+.yggdrasil-form__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.yggdrasil-profile-card__secondary {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+}
+
+.yggdrasil-hint {
+    color: #646970;
+    font-size: 12px;
+}
+
+/* ---------- 按钮 ---------- */
+
+.yggdrasil-button {
+    background: #2271b1;
+    border: 1px solid #2271b1;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 0.45em 0.9em;
+    text-decoration: none;
+}
+
+.yggdrasil-button:hover,
+.yggdrasil-button:focus {
+    background: #135e96;
+    border-color: #135e96;
+    color: #fff;
+}
+
+.yggdrasil-button:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.yggdrasil-button--secondary {
+    background: #f6f7f7;
+    border-color: #2271b1;
+    color: #2271b1;
+}
+
+.yggdrasil-button--secondary:hover,
+.yggdrasil-button--secondary:focus {
+    background: #f0f0f1;
+    border-color: #135e96;
+    color: #135e96;
+}
+
+.yggdrasil-button--danger {
+    background: #d63638;
+    border-color: #d63638;
+    color: #fff;
+}
+
+.yggdrasil-button--danger:hover,
+.yggdrasil-button--danger:focus {
+    background: #b32d2e;
+    border-color: #b32d2e;
+    color: #fff;
+}
+
+/* ---------- 新建档案区域 ---------- */
+
+.yggdrasil-profile-create {
+    background: #f6f7f7;
+    border: 1px dashed #c3c4c7;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    padding: 1rem;
+}
+
+.yggdrasil-profile-create__title {
+    font-size: 1.05em;
+    margin: 0 0 0.25rem;
+}
+
+.yggdrasil-profile-create__hint {
+    color: #646970;
+    font-size: 13px;
+    margin: 0 0 0.75rem;
+}
+
+/* ---------- 响应式 ---------- */
+
+@media (max-width: 600px) {
+    .yggdrasil-profiles__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .yggdrasil-profile-card__body {
+        flex-direction: column;
+    }
+
+    .yggdrasil-profile-card__meta {
+        grid-template-columns: auto 1fr;
+        width: 100%;
+    }
+
+    .yggdrasil-form--inline,
+    .yggdrasil-form--inline .yggdrasil-button {
+        display: block;
+        width: 100%;
+    }
+}
