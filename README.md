@@ -169,13 +169,32 @@ https://example.com/wp-json/yggdrasil/v1/authserver/authenticate
 
 ## 常见问题
 
-### 游戏里看不到皮肤？
+### Minecraft 读取皮肤的逻辑是什么？
 
-1. 确认站点使用 HTTPS，且皮肤 URL 可被外网访问；
-2. 确认客户端填写的是正确的 API 根地址（`/wp-json/yggdrasil/v1/`，带不带结尾斜杠均可）；
-3. 确认 PHP `openssl` 扩展可用（「设置」→「Yggdrasil」可查看签名公钥状态）；
-4. 可能是客户端缓存了旧皮肤，更换皮肤或清理缓存后重试；
-5. 若使用安全插件/防火墙，请确认没有拦截 `/wp-json/yggdrasil/v1/*` 与 `/textures/*` 请求。
+1. 登录后，启动器/客户端拿到档案 UUID 和 `textures` 属性（Base64 JSON，包含 `SKIN.url` 与 `metadata.model`）；
+2. 进入服务器时，服务器通过 `hasJoined` 获取档案属性并下发给客户端；单人/本地皮肤则通过
+   `profile/{uuid}` 接口获取；
+3. 客户端下载皮肤 URL 指向的 PNG，检查域名是否在 API 元数据 `skinDomains` 中，
+   并用 `signaturePublickey` 验证 `textures` 属性的 SHA1withRSA 签名；
+4. 客户端按 URL 最后一段作为材质 hash 缓存图片；`metadata.model` 为 `slim` 时使用 Alex 细手臂模型，
+   缺省时为 Steve 经典模型。
+
+**启动器能显示、游戏内却是默认皮肤**的常见原因：
+
+1. **启动器预览通常不校验签名，而原版游戏会校验。** 请确认「设置 → Yggdrasil → 皮肤诊断」中
+   PHP `openssl` 可用、材质签名已开启、公钥已生成；未签名材质会被原版客户端拒绝，直接显示默认皮肤。
+2. **服务器未开启正版验证（`online-mode=false`）**：离线模式服务器不会调用 `hasJoined`，也就不会把
+   签名材质下发给客户端，皮肤自然不显示。服务器需设置 `online-mode=true` 并配合 authlib-injector。
+3. **皮肤域名不匹配**：皮肤 URL 的域名必须在 `skinDomains` 中；如果 WordPress 的站点地址与实际访问域名
+   不一致（例如站点地址仍为 `localhost`/IP），请修正「设置 → 常规」中的 WordPress 地址，或把实际域名
+   加到「额外皮肤域名」。
+4. **站点未使用 HTTPS，或皮肤 URL 外网不可访问**：请启用 HTTPS，并确认客户端能直接打开皮肤 URL。
+5. **签名密钥被重新生成**：客户端/启动器可能缓存了旧公钥，重启游戏和启动器后再试。
+6. **模型选错**：Minecraft 的“性别/体型”只是 Steve（经典）与 Alex（纤细）模型，不保存在 PNG 中。
+   上传皮肤时请正确选择「经典/纤细」；选错只会导致手臂/体型不对，不会导致整张皮肤消失。
+
+插件的「设置 → Yggdrasil → 皮肤诊断」会列出 openssl 状态、签名开关、密钥位数、站点协议，并在
+未签名、HTTP 或 localhost 等情况下给出警告。
 
 ### 卸载会删除档案和皮肤吗？
 

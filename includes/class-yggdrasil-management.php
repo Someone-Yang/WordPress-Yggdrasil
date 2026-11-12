@@ -635,11 +635,34 @@ class Yggdrasil_Management {
             $public_key = (string) Yggdrasil_Skins::get_public_key();
         }
         $openssl_available = function_exists( 'openssl_pkey_new' );
+        $sign_textures     = class_exists( 'Yggdrasil_Settings' ) ? Yggdrasil_Settings::get_sign_textures() : true;
+        $rsa_bits          = class_exists( 'Yggdrasil_Settings' ) ? Yggdrasil_Settings::get_rsa_key_bits() : 2048;
+        $site_scheme       = wp_parse_url( home_url( '/' ), PHP_URL_SCHEME );
+        $site_host         = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+
+        $skin_warnings = [];
+        if ( ! $openssl_available ) {
+            $skin_warnings[] = 'PHP openssl 扩展未启用：材质无法签名，原版 Minecraft 客户端会拒绝未签名材质并显示默认皮肤。';
+        } elseif ( ! $sign_textures ) {
+            $skin_warnings[] = '材质签名已在下方配置中关闭：原版 Minecraft 客户端会拒绝未签名材质并显示默认皮肤。';
+        } elseif ( '' === $public_key ) {
+            $skin_warnings[] = '签名公钥尚未生成：请访问一次 API 元数据地址或刷新本页面以生成密钥。';
+        }
+        if ( 'https' !== $site_scheme ) {
+            $skin_warnings[] = '站点当前未使用 HTTPS：部分 Minecraft 客户端可能拒绝加载 HTTP 皮肤 URL，建议启用 HTTPS。';
+        }
+        if ( in_array( strtolower( (string) $site_host ), [ 'localhost', '127.0.0.1', '::1' ], true ) ) {
+            $skin_warnings[] = '站点地址为 localhost/127.0.0.1：其他设备上的游戏客户端无法访问该皮肤 URL，请把 WordPress 地址设为公网域名。';
+        }
         ?>
         <div class="wrap yggdrasil-admin">
             <h1><?php echo esc_html__( 'Yggdrasil 设置', 'wordpress-yggdrasil' ); ?></h1>
 
             <?php $this->render_admin_notice( $notice ); ?>
+
+            <?php foreach ( $skin_warnings as $skin_warning ) : ?>
+                <div class="notice notice-warning"><p><?php echo esc_html( $skin_warning ); ?></p></div>
+            <?php endforeach; ?>
 
             <h2><?php echo esc_html__( '插件配置', 'wordpress-yggdrasil' ); ?></h2>
             <?php if ( class_exists( 'Yggdrasil_Settings' ) ) : ?>
@@ -745,6 +768,38 @@ class Yggdrasil_Management {
                             <?php else : ?>
                                 <p><?php echo esc_html__( '尚未生成：首次生成纹理属性时会自动创建密钥对。', 'wordpress-yggdrasil' ); ?></p>
                             <?php endif; ?>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <h2><?php echo esc_html__( '皮肤诊断', 'wordpress-yggdrasil' ); ?></h2>
+            <table class="form-table" role="presentation">
+                <tbody>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( 'PHP openssl 扩展', 'wordpress-yggdrasil' ); ?></th>
+                        <td><?php echo esc_html( $openssl_available ? '可用' : '不可用' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( '材质签名开关', 'wordpress-yggdrasil' ); ?></th>
+                        <td><?php echo esc_html( $sign_textures ? '已开启' : '已关闭' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( '签名密钥位数', 'wordpress-yggdrasil' ); ?></th>
+                        <td><?php echo esc_html( (string) $rsa_bits ); ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( '站点协议', 'wordpress-yggdrasil' ); ?></th>
+                        <td><?php echo esc_html( $site_scheme ? $site_scheme . '://' : '未知' ); ?></td>
+                    </tr>
+                    <tr>
+                        <th scope="row"><?php echo esc_html__( '游戏内显示默认皮肤？', 'wordpress-yggdrasil' ); ?></th>
+                        <td>
+                            <p class="description">
+                                原版客户端只接受带有效签名、且域名在 skinDomains 中的材质。启动器预览通常不校验签名，因此
+                                「启动器能显示、游戏内默认皮肤」通常表示材质未签名、签名密钥不匹配、皮肤域名不匹配，
+                                或服务器未以正版验证（online-mode=true）运行。服务器需启用正版验证并配合 authlib-injector，
+                                客户端才会通过 hasJoined 收到签名材质。
+                            </p>
                         </td>
                     </tr>
                 </tbody>

@@ -786,8 +786,9 @@ class Yggdrasil_Auth_REST {
      */
     private function profile_summary( $profile ) {
         return [
-            'id'   => $profile->uuid,
-            'name' => $profile->name,
+            'id'         => $profile->uuid,
+            'name'       => $profile->name,
+            'properties' => $this->get_profile_properties( $profile, true ),
         ];
     }
 
