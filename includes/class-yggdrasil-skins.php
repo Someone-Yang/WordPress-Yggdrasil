@@ -397,7 +397,11 @@ class Yggdrasil_Skins {
             'value' => base64_encode( $json ),
         ];
 
-        $should_sign = (bool) $signed && (bool) apply_filters( 'yggdrasil_textures_signed', true, $profile );
+        $should_sign = (bool) $signed && (bool) apply_filters(
+            'yggdrasil_textures_signed',
+            class_exists( 'Yggdrasil_Settings' ) ? Yggdrasil_Settings::get_sign_textures() : true,
+            $profile
+        );
         if ( $should_sign && function_exists( 'openssl_sign' ) ) {
             $pair = self::get_key_pair();
             if ( ! is_wp_error( $pair ) && ! empty( $pair['private_key'] ) ) {
@@ -457,8 +461,10 @@ class Yggdrasil_Skins {
             }
         }
 
-        // 惰性生成 RSA 密钥（默认 2048 位，可通过过滤器调整）。
-        $key_bits = (int) apply_filters( 'yggdrasil_rsa_key_bits', 2048 );
+        // 惰性生成 RSA 密钥（后台默认 2048 位，可通过设置页或过滤器调整）。
+        $key_bits = class_exists( 'Yggdrasil_Settings' )
+            ? (int) Yggdrasil_Settings::get_rsa_key_bits()
+            : (int) apply_filters( 'yggdrasil_rsa_key_bits', 2048 );
         if ( $key_bits < 1024 ) {
             $key_bits = 1024;
         }

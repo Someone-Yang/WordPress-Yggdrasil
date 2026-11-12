@@ -42,6 +42,23 @@ class Yggdrasil_Management {
         add_action( 'admin_post_nopriv_yggdrasil_profile_action', [ $this, 'handle_nopriv' ] );
         add_action( 'admin_menu', [ $this, 'register_admin_menu' ] );
         add_action( 'wp_enqueue_scripts', [ $this, 'maybe_enqueue_assets' ] );
+        add_filter( 'plugin_action_links_' . plugin_basename( YGGDRASIL_PLUGIN_FILE ), [ $this, 'add_action_links' ] );
+    }
+
+    /**
+     * 在插件列表中添加「设置」快捷链接。
+     *
+     * @param string[] $links 插件操作链接。
+     * @return string[]
+     */
+    public function add_action_links( $links ) {
+        $settings_url = admin_url( 'options-general.php?page=' . Yggdrasil_Settings::PAGE );
+        array_unshift(
+            $links,
+            '<a href="' . esc_url( $settings_url ) . '">' . esc_html__( '设置', 'wordpress-yggdrasil' ) . '</a>'
+        );
+
+        return $links;
     }
 
     /**
@@ -623,6 +640,11 @@ class Yggdrasil_Management {
             <h1><?php echo esc_html__( 'Yggdrasil 设置', 'wordpress-yggdrasil' ); ?></h1>
 
             <?php $this->render_admin_notice( $notice ); ?>
+
+            <h2><?php echo esc_html__( '插件配置', 'wordpress-yggdrasil' ); ?></h2>
+            <?php if ( class_exists( 'Yggdrasil_Settings' ) ) : ?>
+                <?php Yggdrasil_Settings::render_form(); ?>
+            <?php endif; ?>
 
             <h2><?php echo esc_html__( '接口地址', 'wordpress-yggdrasil' ); ?></h2>
             <table class="form-table" role="presentation">

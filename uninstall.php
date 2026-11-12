@@ -38,6 +38,15 @@ $options = [
     'ygg_textures_private_key',
     'ygg_textures_public_key',
     'ygg_management_page_id',
+    'yggdrasil_max_profiles',
+    'yggdrasil_max_tokens',
+    'yggdrasil_token_expiry_days',
+    'yggdrasil_login_max_attempts',
+    'yggdrasil_max_joins',
+    'yggdrasil_multi_profile_autoselect',
+    'yggdrasil_sign_textures',
+    'yggdrasil_rsa_key_bits',
+    'yggdrasil_extra_skin_domains',
 ];
 
 foreach ( $options as $option ) {

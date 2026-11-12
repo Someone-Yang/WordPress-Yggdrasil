@@ -163,6 +163,11 @@ class Yggdrasil_Auth_REST {
             $skin_domains[] = '.' . $upload_host;
         }
 
+        // 后台「设置 → Yggdrasil」中配置的额外皮肤域名。
+        if ( class_exists( 'Yggdrasil_Settings' ) ) {
+            $skin_domains = array_merge( $skin_domains, Yggdrasil_Settings::get_extra_skin_domains() );
+        }
+
         /**
          * 过滤皮肤域名白名单。
          *
@@ -275,6 +280,16 @@ class Yggdrasil_Auth_REST {
         $selected = Yggdrasil_Profiles::get_default( $user->ID );
         if ( ! $selected && ! empty( $profiles ) ) {
             $selected = $profiles[0];
+        }
+
+        // 多档案登录行为：后台可配置为不自动选择，交由启动器选择。
+        $multi_autoselect = class_exists( 'Yggdrasil_Settings' )
+            ? Yggdrasil_Settings::get_multi_profile_autoselect()
+            : true;
+        $multi_autoselect = (bool) apply_filters( 'yggdrasil_multi_profile_autoselect', $multi_autoselect, $profiles, $user->ID );
+
+        if ( ! $multi_autoselect && count( $profiles ) > 1 ) {
+            $selected = null;
         }
 
         /**
@@ -575,7 +590,9 @@ class Yggdrasil_Auth_REST {
         ) );
 
         // 限制每用户保留的进服记录数量。
-        $max_joins = (int) apply_filters( 'yggdrasil_max_joins_per_user', 20, $user_id );
+        $max_joins = class_exists( 'Yggdrasil_Settings' )
+            ? (int) Yggdrasil_Settings::get_max_joins( $user_id )
+            : (int) apply_filters( 'yggdrasil_max_joins_per_user', 20, $user_id );
         if ( $max_joins < 1 ) {
             $max_joins = 1;
         }
@@ -891,7 +908,9 @@ class Yggdrasil_Auth_REST {
             return false;
         }
 
-        $max = (int) apply_filters( 'yggdrasil_login_max_attempts', self::LOGIN_MAX_ATTEMPTS );
+        $max = class_exists( 'Yggdrasil_Settings' )
+            ? (int) Yggdrasil_Settings::get_login_max_attempts()
+            : (int) apply_filters( 'yggdrasil_login_max_attempts', self::LOGIN_MAX_ATTEMPTS );
         if ( $max < 1 ) {
             return false;
         }
@@ -967,6 +986,10 @@ class Yggdrasil_Auth_REST {
      * @return int
      */
     private function get_token_expiry() {
+        if ( class_exists( 'Yggdrasil_Settings' ) ) {
+            return max( 1, (int) Yggdrasil_Settings::get_token_expiry_seconds() );
+        }
+
         $expiry = (int) apply_filters( 'yggdrasil_token_expiry', self::TOKEN_EXPIRY );
 
         return $expiry > 0 ? $expiry : self::TOKEN_EXPIRY;
@@ -985,7 +1008,9 @@ class Yggdrasil_Auth_REST {
 
         $table_tokens = Yggdrasil_DB::tokens_table();
 
-        $max_tokens = (int) apply_filters( 'yggdrasil_max_tokens_per_user', self::MAX_TOKENS_PER_USER, $user_id );
+        $max_tokens = class_exists( 'Yggdrasil_Settings' )
+            ? (int) Yggdrasil_Settings::get_max_tokens( $user_id )
+            : (int) apply_filters( 'yggdrasil_max_tokens_per_user', self::MAX_TOKENS_PER_USER, $user_id );
         if ( $max_tokens < 1 ) {
             $max_tokens = 1;
         }

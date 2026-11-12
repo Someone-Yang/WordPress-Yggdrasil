@@ -19,6 +19,7 @@
   自动生成 2048 位 RSA 密钥并以 SHA1withRSA 签名；API 元数据中提供 `signaturePublickey`。
 * **API 元数据**：提供 authlib-injector 需要的 `meta`、`skinDomains`、`signaturePublickey`。
 * **平滑升级**：从 0.2.x 升级时自动把旧的 `ygg_uuid` 用户元数据迁移为默认档案，保留原有玩家身份。
+* **后台配置页**：「设置 → Yggdrasil」可直接调整档案/令牌数量、令牌有效期、登录限速、皮肤签名、皮肤域名等参数，无需修改代码。
 * **默认安全卸载**：卸载插件默认保留档案与皮肤数据；需要彻底清理时使用
   `YGGDRASIL_REMOVE_DATA_ON_UNINSTALL` 常量。
 
@@ -30,7 +31,7 @@
 * 可选：PHP `openssl` 扩展（用于皮肤材质签名；未启用时仍可上传皮肤，但部分客户端可能拒绝未签名材质）
 
 > 兼容性：已在 WordPress 6.8.12 + PHP 8.4 + MariaDB 11.8 环境完成集成测试
-> （多档案管理、皮肤上传、REST 认证/会话、0.2.x 数据升级、用户删除清理）。
+> （多档案管理、皮肤上传、REST 认证/会话、0.2.x 数据升级、用户删除清理、后台配置页）。
 
 ## 安装与升级
 
@@ -63,6 +64,23 @@
 * 预览、替换或移除皮肤（任何已登录用户都可为自己档案上传皮肤，不依赖 WordPress 媒体库权限）
 * 把某个档案设为默认档案（登录时自动选中）
 * 删除档案（至少保留一个）
+
+### 管理员：后台配置
+
+进入「设置 → Yggdrasil」，可直接调整以下配置（保存后立即生效）：
+
+* 每用户档案数量上限（默认 5）
+* 每用户令牌数量上限（默认 10）
+* 令牌有效期（天，默认 1）
+* 登录失败次数上限（默认 20，填 0 可禁用登录限速）
+* 每用户进服记录上限（默认 20）
+* 多档案登录时是否自动选择默认档案
+* 是否对皮肤 `textures` 属性签名
+* 签名 RSA 密钥位数（1024/2048/4096，仅影响尚未生成密钥的站点）
+* 额外皮肤域名白名单（每行一个，自动并入 API 元数据 `skinDomains`）
+
+这些配置保存在 WordPress options 中；下方「扩展钩子」中的过滤器仍然有效，并会**覆盖**后台设置，
+便于代码级定制。
 
 ### 客户端 / 服务器：接入 Yggdrasil
 
@@ -166,6 +184,7 @@ define( 'YGGDRASIL_REMOVE_DATA_ON_UNINSTALL', true );
 wordpress-yggdrasil.php             插件入口
 includes/
   class-yggdrasil-db.php            建表、升级与旧数据迁移
+  class-yggdrasil-settings.php      后台配置项（Settings API）
   class-yggdrasil-profiles.php      档案 CRUD 与校验
   class-yggdrasil-skins.php         皮肤上传、PNG 净化、textures 签名
   class-yggdrasil-rest.php          Yggdrasil REST API

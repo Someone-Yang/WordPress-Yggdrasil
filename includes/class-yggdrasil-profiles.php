@@ -221,7 +221,12 @@ class Yggdrasil_Profiles {
      */
     public static function max_profiles( $user_id = 0 ) {
         $user_id = absint( $user_id );
-        $max     = (int) apply_filters( 'yggdrasil_max_profiles_per_user', 5, $user_id );
+
+        if ( class_exists( 'Yggdrasil_Settings' ) ) {
+            return max( 1, (int) Yggdrasil_Settings::get_max_profiles( $user_id ) );
+        }
+
+        $max = (int) apply_filters( 'yggdrasil_max_profiles_per_user', 5, $user_id );
 
         return max( 1, $max );
     }
