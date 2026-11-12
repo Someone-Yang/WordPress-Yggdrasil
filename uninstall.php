@@ -47,6 +47,7 @@ $options = [
     'yggdrasil_sign_textures',
     'yggdrasil_rsa_key_bits',
     'yggdrasil_extra_skin_domains',
+    'yggdrasil_allowed_roles',
 ];
 
 foreach ( $options as $option ) {

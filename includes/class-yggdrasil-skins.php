@@ -312,6 +312,24 @@ class Yggdrasil_Skins {
 
         $url = rest_url( 'yggdrasil/v1/textures/' . $hash );
 
+        // 未启用伪静态时，rest_url() 会生成 index.php?rest_route=... 形式的 URL，
+        // 最后一段不是材质 hash，部分客户端会因此用错缓存键。此时改用上传目录的静态 URL，
+        // 保证 URL 最后一段为 <hash>.png。
+        $rest_path = wp_parse_url( $url, PHP_URL_PATH );
+        $rest_name = is_string( $rest_path ) ? basename( $rest_path ) : '';
+
+        if ( $rest_name !== $hash ) {
+            $uploads = wp_upload_dir();
+            if ( is_array( $uploads )
+                && empty( $uploads['error'] )
+                && ! empty( $uploads['baseurl'] )
+                && ! empty( $profile->skin_path )
+                && is_string( $profile->skin_path )
+            ) {
+                $url = trailingslashit( $uploads['baseurl'] ) . ltrim( $profile->skin_path, '/' );
+            }
+        }
+
         return (string) apply_filters( 'yggdrasil_skin_url', $url, $profile );
     }
 

@@ -20,6 +20,8 @@
 * **API 元数据**：提供 authlib-injector 需要的 `meta`、`skinDomains`、`signaturePublickey`。
 * **平滑升级**：从 0.2.x 升级时自动把旧的 `ygg_uuid` 用户元数据迁移为默认档案，保留原有玩家身份。
 * **后台配置页**：「设置 → Yggdrasil」可直接调整档案/令牌数量、令牌有效期、登录限速、皮肤签名、皮肤域名等参数，无需修改代码。
+* **后台用户档案管理**：管理员可在「用户 → 编辑用户」页面直接为用户增删改档案、设置默认档案、上传/移除皮肤，用户列表会显示档案数量。
+* **用户组登录限制**：管理员可多选允许使用 Yggdrasil 登录的用户组，未选择时默认允许所有用户。
 * **默认安全卸载**：卸载插件默认保留档案与皮肤数据；需要彻底清理时使用
   `YGGDRASIL_REMOVE_DATA_ON_UNINSTALL` 常量。
 
@@ -31,7 +33,8 @@
 * 可选：PHP `openssl` 扩展（用于皮肤材质签名；未启用时仍可上传皮肤，但部分客户端可能拒绝未签名材质）
 
 > 兼容性：已在 WordPress 6.8.12 + PHP 8.4 + MariaDB 11.8 环境完成集成测试
-> （多档案管理、皮肤上传、REST 认证/会话、0.2.x 数据升级、用户删除清理、后台配置页）。
+> （多档案管理、皮肤上传、REST 认证/会话、0.2.x 数据升级、用户删除清理、后台配置页、
+> 后台用户档案管理、用户组登录限制）。
 
 ## 安装与升级
 
@@ -78,9 +81,22 @@
 * 是否对皮肤 `textures` 属性签名
 * 签名 RSA 密钥位数（1024/2048/4096，仅影响尚未生成密钥的站点）
 * 额外皮肤域名白名单（每行一个，自动并入 API 元数据 `skinDomains`）
+* 允许登录的用户组（可多选；未选择时允许所有用户）
 
 这些配置保存在 WordPress options 中；下方「扩展钩子」中的过滤器仍然有效，并会**覆盖**后台设置，
 便于代码级定制。
+
+### 管理员：后台用户档案管理
+
+管理员进入「用户 → 所有用户」，点击某个用户的「编辑」后，页面底部会显示「Yggdrasil 游戏档案」区块，可以：
+
+* 为该用户新建档案；
+* 重命名档案、切换经典/纤细模型；
+* 上传、替换或移除皮肤；
+* 设置默认档案、删除档案（至少保留一个）。
+
+用户列表新增「Yggdrasil 档案」列，显示每个用户的档案数量，并可直接跳转到该用户的管理区块。
+这些操作仅对具有 `manage_options` 权限的管理员开放。
 
 ### 客户端 / 服务器：接入 Yggdrasil
 
@@ -138,6 +154,8 @@ https://example.com/wp-json/yggdrasil/v1/authserver/authenticate
 | `yggdrasil_rsa_key_bits` | 皮肤签名 RSA 密钥位数（默认 2048，最低 1024） |
 | `yggdrasil_login_max_attempts` | 同一用户名 + IP 在 15 分钟窗口内的登录失败次数上限（默认 20，用于简单限速） |
 | `yggdrasil_max_joins_per_user` | 每个用户保留的进服会话记录数上限（默认 20） |
+| `yggdrasil_allowed_roles` | 允许使用 Yggdrasil 登录的用户组（空数组/未选择表示允许所有用户） |
+| `yggdrasil_user_allowed` | 单个用户是否允许登录的最终布尔结果（可覆盖用户组限制） |
 | `yggdrasil_skin_domains` | API 元数据中的皮肤域名白名单 |
 | `yggdrasil_api_metadata` | API 元数据中的 `meta` 字段 |
 | `yggdrasil_skin_url` | 档案皮肤 URL（例如改用 CDN 时） |
@@ -174,6 +192,18 @@ define( 'YGGDRASIL_REMOVE_DATA_ON_UNINSTALL', true );
 
 暂不支持，当前仅支持皮肤。
 
+### 皮肤 URL 会使用什么路径？
+
+启用伪静态时，皮肤 URL 为 `/wp-json/yggdrasil/v1/textures/<hash>`（WordPress 内置 REST 路径），
+不会被当作文章页处理；未启用伪静态时，WordPress REST 地址会变成 `index.php?rest_route=...` 形式，
+插件会自动改用 `/wp-content/uploads/yggdrasil-skins/<hash>.png` 静态地址，保证材质 hash 是 URL 文件名，
+避免客户端材质缓存出错。
+
+### 为什么某个用户无法通过 Yggdrasil 登录？
+
+检查「设置 → Yggdrasil → 允许登录的用户组」。如果选择了用户组，只有属于这些组的用户才能登录；
+未选择任何用户组时允许所有用户。用户组被移除后，该用户已有的令牌也会在 validate/refresh/join 时失效。
+
 ### 管理页面被误删了？
 
 在「设置」→「Yggdrasil」中点击「创建管理页面」，或手动在任意页面插入 `[yggdrasil_profiles]`。
@@ -189,6 +219,7 @@ includes/
   class-yggdrasil-skins.php         皮肤上传、PNG 净化、textures 签名
   class-yggdrasil-rest.php          Yggdrasil REST API
   class-yggdrasil-management.php    前台管理界面与后台设置页
+  class-yggdrasil-admin-profiles.php 后台用户档案管理与用户列表档案列
 assets/
   css/yggdrasil-profiles.css        前台样式
   js/yggdrasil-profiles.js          删除确认与本地皮肤预览

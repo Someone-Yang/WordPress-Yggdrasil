@@ -511,13 +511,14 @@ class Yggdrasil_Profiles {
     }
 
     /**
-     * 删除档案（至少保留一个）。
+     * 删除档案（默认至少保留一个；管理员维护时可传 $force 删除最后一个）。
      *
-     * @param int $profile_id 档案 ID。
-     * @param int $user_id    用户 ID。
+     * @param int  $profile_id 档案 ID。
+     * @param int  $user_id    用户 ID。
+     * @param bool $force      是否允许删除最后一个档案。
      * @return true|WP_Error
      */
-    public static function delete( $profile_id, $user_id ) {
+    public static function delete( $profile_id, $user_id, $force = false ) {
         global $wpdb;
 
         $profile_id = absint( $profile_id );
@@ -528,7 +529,7 @@ class Yggdrasil_Profiles {
             return new WP_Error( 'ygg_forbidden', '无权操作该档案。' );
         }
 
-        if ( self::count_for_user( $user_id ) <= 1 ) {
+        if ( ! $force && self::count_for_user( $user_id ) <= 1 ) {
             return new WP_Error( 'ygg_last_profile', '至少需要保留一个档案。' );
         }
 

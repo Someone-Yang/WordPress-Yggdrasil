@@ -267,6 +267,11 @@ class Yggdrasil_Auth_REST {
 
         $this->clear_login_failures( $username );
 
+        // 用户组限制：仅允许后台配置的用户组使用 Yggdrasil 登录。
+        if ( ! $this->is_user_allowed( $user->ID ) ) {
+            return $this->error_response( 'This account is not allowed to use Yggdrasil login.', 403 );
+        }
+
         // 确保用户至少拥有一个档案（兼容旧版本用户）。
         $profiles = Yggdrasil_Profiles::get_for_user( $user->ID );
         if ( empty( $profiles ) ) {
@@ -366,6 +371,10 @@ class Yggdrasil_Auth_REST {
             return $this->error_response( 'User not found', 500 );
         }
 
+        if ( ! $this->is_user_allowed( $user->ID ) ) {
+            return $this->error_response( 'This account is not allowed to use Yggdrasil login.', 403 );
+        }
+
         // 确定新令牌绑定的档案：可选择切换，否则沿用原绑定或默认档案。
         $selected = null;
         if ( isset( $params['selectedProfile'] ) ) {
@@ -458,6 +467,11 @@ class Yggdrasil_Auth_REST {
             return $this->error_response( 'Invalid token', 403 );
         }
 
+        // 用户不再属于允许登录的用户组时，令牌视为无效。
+        if ( ! $this->is_user_allowed( (int) $token_row->user_id ) ) {
+            return $this->error_response( 'Invalid token', 403 );
+        }
+
         if ( '' !== $client_token && $token_row->client_token !== $client_token ) {
             return $this->error_response( 'Invalid token', 403 );
         }
@@ -543,6 +557,11 @@ class Yggdrasil_Auth_REST {
 
         // 用户已被删除时，其令牌视为无效。
         if ( ! get_user_by( 'id', (int) $token_row->user_id ) ) {
+            return $this->error_response( 'Invalid access token', 403 );
+        }
+
+        // 用户不再属于允许登录的用户组时，令牌视为无效。
+        if ( ! $this->is_user_allowed( (int) $token_row->user_id ) ) {
             return $this->error_response( 'Invalid access token', 403 );
         }
 
@@ -666,6 +685,11 @@ class Yggdrasil_Auth_REST {
             return new WP_REST_Response( null, 204 );
         }
 
+        // 用户不再属于允许登录的用户组时不再允许进服。
+        if ( ! $this->is_user_allowed( (int) $join->user_id ) ) {
+            return new WP_REST_Response( null, 204 );
+        }
+
         // 用户名必须与档案名一致。
         if ( 0 !== strcasecmp( $profile->name, $username ) ) {
             return new WP_REST_Response( null, 204 );
@@ -785,6 +809,20 @@ class Yggdrasil_Auth_REST {
          * @param object $profile    档案对象（新参数）。
          */
         return apply_filters( 'yggdrasil_profile_properties', $properties, (int) $profile->user_id, $profile );
+    }
+
+    /**
+     * 判断用户是否属于允许使用 Yggdrasil 的用户组。
+     *
+     * @param int $user_id 用户 ID。
+     * @return bool
+     */
+    private function is_user_allowed( $user_id ) {
+        if ( class_exists( 'Yggdrasil_Settings' ) ) {
+            return Yggdrasil_Settings::is_user_allowed( $user_id );
+        }
+
+        return true;
     }
 
     /**

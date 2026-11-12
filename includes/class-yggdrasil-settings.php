@@ -34,6 +34,7 @@ class Yggdrasil_Settings {
     const OPTION_RSA_KEY_BITS            = 'yggdrasil_rsa_key_bits';
     const OPTION_EXTRA_SKIN_DOMAINS      = 'yggdrasil_extra_skin_domains';
     const OPTION_MULTI_PROFILE_AUTOSELECT = 'yggdrasil_multi_profile_autoselect';
+    const OPTION_ALLOWED_ROLES            = 'yggdrasil_allowed_roles';
 
     /**
      * 注册钩子。
@@ -78,6 +79,11 @@ class Yggdrasil_Settings {
             'type'              => 'string',
             'sanitize_callback' => [ __CLASS__, 'sanitize_checkbox' ],
             'default'           => '1',
+        ] );
+        register_setting( self::GROUP, self::OPTION_ALLOWED_ROLES, [
+            'type'              => 'array',
+            'sanitize_callback' => [ __CLASS__, 'sanitize_allowed_roles' ],
+            'default'           => [],
         ] );
 
         // 皮肤与签名。
@@ -198,6 +204,17 @@ class Yggdrasil_Settings {
                 'default'     => 1,
                 'label'       => '登录时自动选择默认档案',
                 'description' => '关闭后，拥有多个档案的用户登录时不自动绑定档案，交由启动器选择（单档案用户仍会自动选定）。',
+            ]
+        );
+        add_settings_field(
+            self::OPTION_ALLOWED_ROLES,
+            '允许登录的用户组',
+            [ __CLASS__, 'render_roles_field' ],
+            self::PAGE,
+            'yggdrasil_section_login',
+            [
+                'option'      => self::OPTION_ALLOWED_ROLES,
+                'description' => '只有属于所选用户组的用户才能通过 Yggdrasil 登录。未选择任何用户组时允许所有用户登录。',
             ]
         );
 
@@ -384,6 +401,35 @@ class Yggdrasil_Settings {
         <?php
     }
 
+    /**
+     * 允许登录的用户组复选框。
+     *
+     * @param array $args 字段参数。
+     */
+    public static function render_roles_field( $args ) {
+        $roles    = wp_roles()->roles;
+        $selected = self::get_allowed_roles_raw();
+        ?>
+        <input type="hidden" name="<?php echo esc_attr( self::OPTION_ALLOWED_ROLES ); ?>[]" value="" />
+        <fieldset>
+            <?php foreach ( $roles as $slug => $role ) : ?>
+                <label style="display:inline-block;margin:0 18px 8px 0;">
+                    <input
+                        type="checkbox"
+                        name="<?php echo esc_attr( self::OPTION_ALLOWED_ROLES ); ?>[]"
+                        value="<?php echo esc_attr( $slug ); ?>"
+                        <?php checked( in_array( $slug, $selected, true ) ); ?>
+                    />
+                    <?php echo esc_html( isset( $role['name'] ) ? $role['name'] : $slug ); ?>
+                </label>
+            <?php endforeach; ?>
+        </fieldset>
+        <?php if ( ! empty( $args['description'] ) ) : ?>
+            <p class="description"><?php echo esc_html( $args['description'] ); ?></p>
+        <?php endif; ?>
+        <?php
+    }
+
     // ---------- 读取（供其他模块使用，保留过滤器覆盖） ----------
 
     /**
@@ -501,6 +547,57 @@ class Yggdrasil_Settings {
         return array_values( array_unique( $domains ) );
     }
 
+    /**
+     * 允许登录的用户组（应用过滤器）。
+     *
+     * @return string[]
+     */
+    public static function get_allowed_roles() {
+        return (array) apply_filters( 'yggdrasil_allowed_roles', self::get_allowed_roles_raw() );
+    }
+
+    /**
+     * 判断用户是否属于允许使用 Yggdrasil 的用户组。
+     *
+     * 未配置任何用户组时允许所有用户。
+     *
+     * @param int $user_id 用户 ID。
+     * @return bool
+     */
+    public static function is_user_allowed( $user_id ) {
+        $user_id = absint( $user_id );
+        $allowed = self::get_allowed_roles();
+
+        if ( empty( $allowed ) ) {
+            return (bool) apply_filters( 'yggdrasil_user_allowed', true, $user_id );
+        }
+
+        $user = get_user_by( 'id', $user_id );
+        if ( ! $user ) {
+            return (bool) apply_filters( 'yggdrasil_user_allowed', false, $user_id );
+        }
+
+        $is_allowed = (bool) array_intersect( (array) $user->roles, $allowed );
+
+        return (bool) apply_filters( 'yggdrasil_user_allowed', $is_allowed, $user_id );
+    }
+
+    /**
+     * 读取保存的用户组（不应用过滤器，供表单回显）。
+     *
+     * @return string[]
+     */
+    private static function get_allowed_roles_raw() {
+        $raw = get_option( self::OPTION_ALLOWED_ROLES, [] );
+        if ( ! is_array( $raw ) ) {
+            return [];
+        }
+
+        $all_roles = array_keys( wp_roles()->roles );
+
+        return array_values( array_intersect( array_map( 'strval', $raw ), $all_roles ) );
+    }
+
     // ---------- 清理回调 ----------
 
     public static function sanitize_max_profiles( $value ) {
@@ -557,6 +654,33 @@ class Yggdrasil_Settings {
         $domains = array_values( array_unique( $domains ) );
 
         return implode( "\n", array_slice( $domains, 0, 50 ) );
+    }
+
+    /**
+     * 清理允许登录的用户组：只保留当前存在的角色 slug。
+     *
+     * @param mixed $value 提交值。
+     * @return string[]
+     */
+    public static function sanitize_allowed_roles( $value ) {
+        if ( ! is_array( $value ) ) {
+            return [];
+        }
+
+        $all_roles = array_keys( wp_roles()->roles );
+        $roles     = [];
+
+        foreach ( $value as $role ) {
+            if ( ! is_scalar( $role ) ) {
+                continue;
+            }
+            $role = sanitize_key( (string) $role );
+            if ( in_array( $role, $all_roles, true ) ) {
+                $roles[] = $role;
+            }
+        }
+
+        return array_values( array_unique( $roles ) );
     }
 
     // ---------- 内部辅助 ----------
