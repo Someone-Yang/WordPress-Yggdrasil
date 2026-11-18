@@ -334,6 +334,65 @@ class Yggdrasil_Skins {
     }
 
     /**
+     * 输出皮肤 3D 预览容器的 HTML。
+     *
+     * 容器内先放置原始 2D 图片作为回退，脚本加载后替换为 CSS 3D 模型。
+     *
+     * @param object $profile 档案对象。
+     * @param int    $size    预览尺寸（像素，48-256）。
+     * @return string 无皮肤时返回空串。
+     */
+    public static function get_viewer_html( $profile, $size = 96 ) {
+        if ( ! is_object( $profile ) ) {
+            return '';
+        }
+
+        $url = self::get_url( $profile );
+        if ( '' === $url ) {
+            return '';
+        }
+
+        $size  = (int) $size;
+        $size  = max( 48, min( 256, $size ) );
+        $model = ( isset( $profile->model ) && 'slim' === $profile->model ) ? 'slim' : 'default';
+        $name  = isset( $profile->name ) ? (string) $profile->name : '';
+
+        return sprintf(
+            '<div class="ygg-skin-viewer" data-ygg-skin-viewer data-skin-url="%1$s" data-skin-model="%2$s" data-skin-size="%3$d" style="width:%3$dpx;height:%3$dpx;">'
+            . '<img class="ygg-skin-viewer__static" src="%1$s" alt="%4$s" width="%3$d" height="%3$d" loading="lazy" /></div>',
+            esc_url( $url ),
+            esc_attr( $model ),
+            $size,
+            esc_attr( sprintf( '档案「%s」的皮肤预览', $name ) )
+        );
+    }
+
+    /**
+     * 入队 3D 预览所需的前台/后台资源。
+     *
+     * @return void
+     */
+    public static function enqueue_viewer_assets() {
+        if ( ! defined( 'YGGDRASIL_PLUGIN_URL' ) || ! defined( 'YGGDRASIL_VERSION' ) ) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'yggdrasil-skin-viewer',
+            YGGDRASIL_PLUGIN_URL . 'assets/css/yggdrasil-skin-viewer.css',
+            [],
+            YGGDRASIL_VERSION
+        );
+        wp_enqueue_script(
+            'yggdrasil-skin-viewer',
+            YGGDRASIL_PLUGIN_URL . 'assets/js/yggdrasil-skin-viewer.js',
+            [],
+            YGGDRASIL_VERSION,
+            true
+        );
+    }
+
+    /**
      * 根据 SHA-256 解析皮肤文件真实路径
      *
      * @param string $hash 净化后 PNG 的 SHA-256（64 位小写十六进制）。

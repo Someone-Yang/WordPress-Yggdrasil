@@ -28,6 +28,26 @@ class Yggdrasil_Admin_Profiles {
         add_action( 'admin_post_yggdrasil_admin_profile_action', [ $this, 'handle_action' ] );
         add_filter( 'manage_users_columns', [ $this, 'add_profile_column' ] );
         add_filter( 'manage_users_custom_column', [ $this, 'render_profile_column' ], 10, 3 );
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+    }
+
+    /**
+     * 在用户编辑页面入队皮肤 3D 预览资源。
+     *
+     * @param string $hook_suffix 当前后台页面。
+     */
+    public function enqueue_assets( $hook_suffix ) {
+        if ( ! in_array( $hook_suffix, [ 'profile.php', 'user-edit.php' ], true ) ) {
+            return;
+        }
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        if ( class_exists( 'Yggdrasil_Skins' ) ) {
+            Yggdrasil_Skins::enqueue_viewer_assets();
+        }
     }
 
     /**
@@ -93,7 +113,7 @@ class Yggdrasil_Admin_Profiles {
                             <td><?php echo esc_html( 'slim' === $model ? '纤细（Alex）' : '经典（Steve）' ); ?></td>
                             <td>
                                 <?php if ( $skin_url ) : ?>
-                                    <img src="<?php echo esc_url( $skin_url ); ?>" alt="" width="48" height="48" style="image-rendering:pixelated;background:#f0f0f1;" />
+                                    <?php echo Yggdrasil_Skins::get_viewer_html( $profile, 96 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 已在方法内部转义。 ?>
                                 <?php else : ?>
                                     —
                                 <?php endif; ?>

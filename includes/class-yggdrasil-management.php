@@ -92,6 +92,9 @@ class Yggdrasil_Management {
             YGGDRASIL_VERSION,
             true
         );
+
+        // 皮肤 3D 预览。
+        Yggdrasil_Skins::enqueue_viewer_assets();
     }
 
     /**
@@ -466,14 +469,7 @@ class Yggdrasil_Management {
             <div class="yggdrasil-profile-card__body">
                 <div class="yggdrasil-profile-card__skin">
                     <?php if ( $skin_url ) : ?>
-                        <img
-                            class="yggdrasil-skin-preview"
-                            src="<?php echo esc_url( $skin_url ); ?>"
-                            alt="<?php echo esc_attr( sprintf( __( '档案「%s」的皮肤预览', 'wordpress-yggdrasil' ), $profile->name ) ); ?>"
-                            width="96"
-                            height="96"
-                            loading="lazy"
-                        />
+                        <?php echo Yggdrasil_Skins::get_viewer_html( $profile, 96 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- 已在方法内部转义。 ?>
                     <?php else : ?>
                         <div class="yggdrasil-skin-preview yggdrasil-skin-preview--empty"><?php echo esc_html__( '暂无皮肤', 'wordpress-yggdrasil' ); ?></div>
                     <?php endif; ?>

@@ -1,0 +1,78 @@
+/**
+ * Minecraft 皮肤 3D 预览样式。
+ *
+ * 仅作用于 .ygg-skin-viewer 容器，无外部依赖；脚本未启用时显示原始 2D 预览图。
+ */
+
+.ygg-skin-viewer {
+    align-items: center;
+    background:
+        linear-gradient(45deg, #f0f0f1 25%, transparent 25%, transparent 75%, #f0f0f1 75%) 0 0 / 12px 12px,
+        linear-gradient(45deg, #f0f0f1 25%, transparent 25%, transparent 75%, #f0f0f1 75%) 6px 6px / 12px 12px,
+        #fff;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    cursor: grab;
+    display: inline-flex;
+    justify-content: center;
+    overflow: hidden;
+    perspective: 520px;
+    position: relative;
+    touch-action: none;
+    user-select: none;
+}
+
+.ygg-skin-viewer--dragging {
+    cursor: grabbing;
+}
+
+.ygg-skin-viewer__static {
+    display: block;
+    height: 100%;
+    image-rendering: pixelated;
+    object-fit: contain;
+    width: 100%;
+}
+
+.ygg-skin-viewer--3d .ygg-skin-viewer__static,
+.ygg-skin-viewer--failed .ygg-skin-viewer__static {
+    display: none;
+}
+
+.ygg-skin-viewer--failed::after {
+    color: #646970;
+    content: "皮肤加载失败";
+    font-size: 12px;
+}
+
+.ygg-skin-viewer__stage {
+    height: 100%;
+    left: 0;
+    position: absolute;
+    top: 0;
+    transform-style: preserve-3d;
+    width: 100%;
+}
+
+.ygg-skin-viewer__part {
+    height: 0;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform-style: preserve-3d;
+    width: 0;
+}
+
+.ygg-skin-viewer__face {
+    backface-visibility: hidden;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    left: 0;
+    position: absolute;
+    top: 0;
+}
+
+/* 前台档案卡片中的 3D 预览容器 */
+.yggdrasil-profile-card__skin .ygg-skin-viewer {
+    max-width: 100%;
+}
