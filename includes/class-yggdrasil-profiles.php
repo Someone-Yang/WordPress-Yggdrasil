@@ -511,6 +511,90 @@ class Yggdrasil_Profiles {
     }
 
     /**
+     * 修改档案 UUID（管理员维护用途）。
+     *
+     * UUID 是玩家身份标识。改动后，服务器上按旧 UUID 保存的玩家数据（背包、末影箱、统计等）
+     * 将不再与该玩家关联，因此仅应在确知后果时调用。
+     *
+     * @param int    $profile_id 档案 ID。
+     * @param int    $user_id    档案所属用户 ID。
+     * @param string $new_uuid   新 UUID（可带连字符，大小写不限）。
+     * @return true|WP_Error
+     */
+    public static function update_uuid( $profile_id, $user_id, $new_uuid ) {
+        global $wpdb;
+
+        $profile_id = absint( $profile_id );
+        $user_id    = absint( $user_id );
+        $profile    = self::get( $profile_id );
+
+        if ( ! $profile || (int) $profile->user_id !== $user_id || $user_id <= 0 ) {
+            return new WP_Error( 'ygg_forbidden', '无权操作该档案。' );
+        }
+
+        $valid = self::validate_uuid( $new_uuid );
+        if ( is_wp_error( $valid ) ) {
+            return $valid;
+        }
+
+        $uuid     = self::normalize_uuid( $new_uuid );
+        $old_uuid = (string) $profile->uuid;
+
+        if ( $uuid === $old_uuid ) {
+            return true;
+        }
+
+        $existing = self::get_by_uuid( $uuid );
+        if ( $existing && (int) $existing->id !== $profile_id ) {
+            return new WP_Error( 'ygg_uuid_taken', '该 UUID 已被其他档案使用。' );
+        }
+
+        $updated = $wpdb->update(
+            self::profiles_table(),
+            [
+                'uuid'    => $uuid,
+                'updated' => current_time( 'mysql', true ),
+            ],
+            [
+                'id'      => $profile_id,
+                'user_id' => $user_id,
+            ],
+            [ '%s', '%s' ],
+            [ '%d', '%d' ]
+        );
+
+        if ( false === $updated ) {
+            return new WP_Error( 'ygg_db_error', '更新档案 UUID 失败，请稍后重试。' );
+        }
+
+        // 进服记录以 32 位 UUID 文本关联档案，需要同步迁移。
+        $wpdb->update(
+            self::joins_table(),
+            [ 'profile_id' => $uuid ],
+            [
+                'user_id'    => $user_id,
+                'profile_id' => $old_uuid,
+            ],
+            [ '%s' ],
+            [ '%d', '%s' ]
+        );
+
+        // 默认档案同步更新旧版 ygg_uuid 元数据，避免旧逻辑读到已失效的 UUID。
+        if ( ! empty( $profile->is_default ) ) {
+            $legacy = self::normalize_uuid( get_user_meta( $user_id, 'ygg_uuid', true ) );
+            if ( '' !== $legacy && $legacy === $old_uuid ) {
+                update_user_meta( $user_id, 'ygg_uuid', self::hyphenate_uuid( $uuid ) );
+            }
+        }
+
+        $fresh = self::get( $profile_id );
+
+        do_action( 'yggdrasil_profile_uuid_changed', $fresh ? $fresh : $profile, $user_id, $old_uuid );
+
+        return true;
+    }
+
+    /**
      * 删除档案（默认至少保留一个；管理员维护时可传 $force 删除最后一个）。
      *
      * @param int  $profile_id 档案 ID。
@@ -742,6 +826,51 @@ class Yggdrasil_Profiles {
         }
 
         return true;
+    }
+
+    /**
+     * 校验档案 UUID：接受带/不带连字符的 32 位十六进制字符串。
+     *
+     * @param string $uuid UUID。
+     * @return true|WP_Error
+     */
+    public static function validate_uuid( $uuid ) {
+        if ( ! is_string( $uuid ) ) {
+            return new WP_Error( 'ygg_invalid_uuid', 'UUID 必须是文本。' );
+        }
+
+        if ( '' === self::normalize_uuid( $uuid ) ) {
+            return new WP_Error( 'ygg_invalid_uuid', 'UUID 格式不合法，需为 32 位十六进制（可带连字符）。' );
+        }
+
+        return true;
+    }
+
+    /**
+     * 按名称生成与 Minecraft 离线模式一致的 UUID。
+     *
+     * 等价于 Java 的 UUID.nameUUIDFromBytes( ( "OfflinePlayer:" + name ).getBytes( UTF_8 ) )，
+     * 用于把原本使用离线验证的玩家迁移到本认证服务时保持 UUID 不变。
+     *
+     * @param string $name 玩家名称。
+     * @return string 32 位小写十六进制 UUID；名称为空时返回空串。
+     */
+    public static function generate_offline_uuid( $name ) {
+        $name = (string) $name;
+        if ( '' === $name ) {
+            return '';
+        }
+
+        $hash = md5( 'OfflinePlayer:' . $name, true );
+        if ( 16 !== strlen( $hash ) ) {
+            return '';
+        }
+
+        // 版本 3（MD5 名称 UUID），并设置 RFC 4122 变体位。
+        $hash[6] = chr( ( ord( $hash[6] ) & 0x0f ) | 0x30 );
+        $hash[8] = chr( ( ord( $hash[8] ) & 0x3f ) | 0x80 );
+
+        return bin2hex( $hash );
     }
 
     /**

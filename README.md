@@ -20,7 +20,7 @@
 * **API 元数据**：提供 authlib-injector 需要的 `meta`、`skinDomains`、`signaturePublickey`。
 * **平滑升级**：从 0.2.x 升级时自动把旧的 `ygg_uuid` 用户元数据迁移为默认档案，保留原有玩家身份。
 * **后台配置页**：「设置 → Yggdrasil」可直接调整档案/令牌数量、令牌有效期、登录限速、皮肤签名、皮肤域名等参数，无需修改代码。
-* **后台用户档案管理**：管理员可在「用户 → 编辑用户」页面直接为用户增删改档案、设置默认档案、上传/移除皮肤，用户列表会显示档案数量。
+* **后台用户档案管理**：管理员可在「用户 → 编辑用户」页面直接为用户增删改档案、修改 UUID、设置默认档案、上传/移除皮肤，用户列表会显示档案数量。
 * **用户组登录限制**：管理员可多选允许使用 Yggdrasil 登录的用户组，未选择时默认允许所有用户。
 * **默认安全卸载**：卸载插件默认保留档案与皮肤数据；需要彻底清理时使用
   `YGGDRASIL_REMOVE_DATA_ON_UNINSTALL` 常量。
@@ -93,10 +93,17 @@
 * 为该用户新建档案；
 * 重命名档案、切换经典/纤细模型；
 * 上传、替换或移除皮肤；
-* 设置默认档案、删除档案（至少保留一个）。
+* 设置默认档案、删除档案（至少保留一个）；
+* **修改档案 UUID**：可手动填写 32 位十六进制 UUID（可带连字符），也可一键「改为离线 UUID」
+  按档案名称生成与 Minecraft 离线模式一致的值（便于从离线验证服务器迁移）。
 
 用户列表新增「Yggdrasil 档案」列，显示每个用户的档案数量，并可直接跳转到该用户的管理区块。
 这些操作仅对具有 `manage_options` 权限的管理员开放。
+
+> **修改 UUID 的风险**：UUID 是玩家身份标识。改动后，服务器上按旧 UUID 保存的玩家数据
+> （背包、末影箱、统计等）不再与该玩家关联。迁移已存在的服务器时，请先把「用户数据」目录中的
+> `<旧 UUID>.dat` 重命名为 `<新 UUID>.dat`，或优先使用「改为离线 UUID」保持与原离线 UUID 一致。
+> UUID 修改后，皮肤、默认标记与令牌绑定会保留，进服记录会自动同步为新 UUID。
 
 ### 客户端 / 服务器：接入 Yggdrasil
 
@@ -165,6 +172,7 @@ https://example.com/wp-json/yggdrasil/v1/authserver/authenticate
 ### 动作
 
 `yggdrasil_profile_created`、`yggdrasil_profile_updated`、`yggdrasil_profile_deleted`、
+`yggdrasil_profile_uuid_changed`（参数：`$profile, $user_id, $old_uuid`）、
 `yggdrasil_skin_uploaded`、`yggdrasil_skin_removed`。
 
 ## 常见问题

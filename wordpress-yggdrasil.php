@@ -3,7 +3,7 @@
  * Plugin Name: Minecraft Yggdrasil 兼容层 (WP REST API)
  * Plugin URI: https://github.com/Someone-Yang/WordPress-Yggdrasil
  * Description: 利用 WordPress REST API 提供兼容 Minecraft Yggdrasil 的认证、会话服务，并支持多游戏档案与皮肤上传。
- * Version: 0.3.2
+ * Version: 0.3.3
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * Author: 氧化某人
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'YGGDRASIL_VERSION', '0.3.2' );
+define( 'YGGDRASIL_VERSION', '0.3.3' );
 define( 'YGGDRASIL_PLUGIN_FILE', __FILE__ );
 define( 'YGGDRASIL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'YGGDRASIL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

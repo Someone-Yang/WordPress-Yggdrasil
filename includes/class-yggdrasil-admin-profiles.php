@@ -48,6 +48,8 @@ class Yggdrasil_Admin_Profiles {
         ?>
         <h2 id="yggdrasil-profiles">Yggdrasil 游戏档案</h2>
         <p>在此管理该用户的 Minecraft 游戏档案。档案 UUID 是玩家身份标识；重命名不会改变 UUID 或玩家数据。</p>
+        <p><strong>注意：</strong>修改档案 UUID 会让服务器上按旧 UUID 保存的玩家数据（背包、末影箱、统计等）不再与该玩家关联。
+        从离线验证迁移过来的服务器可用「改为离线 UUID」按档案名称生成与原离线 UUID 一致的值。</p>
 
         <?php if ( is_array( $notice ) ) : ?>
             <div class="notice notice-<?php echo esc_attr( 'error' === $notice['type'] ? 'error' : 'success' ); ?> is-dismissible">
@@ -107,6 +109,12 @@ class Yggdrasil_Admin_Profiles {
                                     <button type="submit" class="button">保存</button>
                                 </form>
 
+                                <form method="post" action="<?php echo esc_url( $form_url ); ?>" style="margin-bottom:8px;" onsubmit="return confirm('<?php echo esc_js( '确定修改该档案的 UUID 吗？修改后服务器上按旧 UUID 保存的玩家数据将不再与该玩家关联。' ); ?>');">
+                                    <?php $this->hidden_fields( 'change_uuid', $user->ID, $profile_id ); ?>
+                                    <input type="text" name="admin_profile_uuid" value="<?php echo esc_attr( $this->format_uuid( $profile->uuid ) ); ?>" maxlength="36" class="regular-text code" style="max-width:260px;" />
+                                    <button type="submit" class="button">保存 UUID</button>
+                                </form>
+
                                 <form method="post" action="<?php echo esc_url( $form_url ); ?>" enctype="multipart/form-data" style="margin-bottom:8px;">
                                     <?php $this->hidden_fields( 'upload_skin', $user->ID, $profile_id ); ?>
                                     <input type="file" name="ygg_admin_skin" accept="image/png" required />
@@ -130,6 +138,10 @@ class Yggdrasil_Admin_Profiles {
                                             <button type="submit" class="button button-small">移除皮肤</button>
                                         </form>
                                     <?php endif; ?>
+                                    <form method="post" action="<?php echo esc_url( $form_url ); ?>" style="display:inline;" onsubmit="return confirm('<?php echo esc_js( '确定把该档案的 UUID 改为按名称生成的离线 UUID 吗？' ); ?>');">
+                                        <?php $this->hidden_fields( 'offline_uuid', $user->ID, $profile_id ); ?>
+                                        <button type="submit" class="button button-small">改为离线 UUID</button>
+                                    </form>
                                     <form method="post" action="<?php echo esc_url( $form_url ); ?>" style="display:inline;" onsubmit="return confirm('<?php echo esc_js( sprintf( '确定删除档案「%s」吗？此操作不可恢复。', $profile->name ) ); ?>');">
                                         <?php $this->hidden_fields( 'delete', $user->ID, $profile_id ); ?>
                                         <button type="submit" class="button button-small button-link-delete">删除档案</button>
@@ -219,6 +231,27 @@ class Yggdrasil_Admin_Profiles {
                 }
                 $result          = Yggdrasil_Profiles::update( $profile_id, $target_user_id, $data );
                 $success_message = '档案已更新。';
+                break;
+
+            case 'change_uuid':
+                $uuid            = isset( $_POST['admin_profile_uuid'] ) ? sanitize_text_field( wp_unslash( $_POST['admin_profile_uuid'] ) ) : '';
+                $result          = Yggdrasil_Profiles::update_uuid( $profile_id, $target_user_id, $uuid );
+                $success_message = '档案 UUID 已更新。';
+                break;
+
+            case 'offline_uuid':
+                $profile = Yggdrasil_Profiles::get( $profile_id );
+                if ( ! $profile || (int) $profile->user_id !== (int) $target_user_id ) {
+                    $result = new WP_Error( 'ygg_forbidden', '找不到该档案，或档案不属于该用户。' );
+                    break;
+                }
+                $offline_uuid = Yggdrasil_Profiles::generate_offline_uuid( $profile->name );
+                if ( '' === $offline_uuid ) {
+                    $result = new WP_Error( 'ygg_invalid_uuid', '无法根据该档案名称生成离线 UUID。' );
+                    break;
+                }
+                $result          = Yggdrasil_Profiles::update_uuid( $profile_id, $target_user_id, $offline_uuid );
+                $success_message = '档案 UUID 已改为离线 UUID：' . $offline_uuid;
                 break;
 
             case 'set_default':
